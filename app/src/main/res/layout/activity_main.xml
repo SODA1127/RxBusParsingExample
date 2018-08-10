@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <RelativeLayout
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+        <android.support.v7.widget.AppCompatEditText
+            android:id="@+id/bus_no_input"
+            android:layout_height="wrap_content"
+            android:layout_width="150dp"
+            android:layout_centerHorizontal="true"
+            android:hint="정류장 번호 입력"
+            android:layout_marginTop="40dp"/>
+        <Button
+            android:id="@+id/bus_search_btn"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:text="검색"
+            android:layout_toEndOf="@+id/bus_no_input"
+            android:layout_alignBaseline="@+id/bus_no_input"/>
+
+        <TextView
+            android:id="@+id/result_tv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/bus_no_input"
+            android:layout_marginTop="20dp"
+            android:textSize="14sp"/>
+    </RelativeLayout>
+</layout>
