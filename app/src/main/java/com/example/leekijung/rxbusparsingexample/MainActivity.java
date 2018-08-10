@@ -48,7 +48,7 @@ public class MainActivity extends RxAppCompatActivity {
         Observable<Bus> busData = retrofitBus.getBusData(busStopId);
 
         Observable.interval(0, 5, TimeUnit.SECONDS)
-                .flatMap(n -> busData)
+                .flatMap(bus -> busData)
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(bindToLifecycle())
@@ -69,7 +69,7 @@ public class MainActivity extends RxAppCompatActivity {
                                 binding.resultTv.setText("버스 도착정보가 없음");
                                 makeToast("버스 도착정보가 없음");
                             }
-                        }, e -> e.printStackTrace()
+                        }, Throwable::printStackTrace
                         , () -> makeToast("성공적으로 버스정보 바인딩됨"));
     }
 
