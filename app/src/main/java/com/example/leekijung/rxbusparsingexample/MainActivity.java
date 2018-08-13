@@ -1,13 +1,14 @@
 package com.example.leekijung.rxbusparsingexample;
 
 import android.annotation.SuppressLint;
+import android.arch.lifecycle.ViewModelProviders;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.widget.Toast;
 
 import com.example.leekijung.rxbusparsingexample.databinding.ActivityMainBinding;
 import com.example.leekijung.rxbusparsingexample.model.Bus;
-import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import com.example.leekijung.rxbusparsingexample.viewmodel.BusViewModel;
 import com.jakewharton.rxbinding.view.RxView;
 import com.trello.rxlifecycle2.components.support.RxAppCompatActivity;
 
@@ -16,38 +17,27 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends RxAppCompatActivity {
-    final String BASE_BUS_URL = "http://bis.naju.go.kr:8080/";
-    final String SUCCESS = "SUCCESS";
     public ActivityMainBinding binding;
+    private BusViewModel busViewModel;
+    private final String SUCCESS = "SUCCESS";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        busViewModel = ViewModelProviders.of(this).get(BusViewModel.class);
 
         RxView.clicks(binding.busSearchBtn)
-                .subscribe(e -> getBus());
+                .subscribe(bus -> getBus());
     }
 
     @SuppressLint("CheckResult")
     public void getBus() {
         String busStopId = binding.busNoInput.getText().toString();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_BUS_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
-                .build();
-
-        RetrofitBus retrofitBus = retrofit.create(RetrofitBus.class);
-
-        Observable<Bus> busData = retrofitBus.getBusData(busStopId);
-
-        Observable.interval(0, 5, TimeUnit.SECONDS)
+        Observable<Bus> busData = busViewModel.getBusInfo(busStopId);
+        Observable.interval(5, TimeUnit.SECONDS)
                 .flatMap(bus -> busData)
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -57,6 +47,7 @@ public class MainActivity extends RxAppCompatActivity {
                                 makeToast("버스 도착정보 있음");
                                 StringBuffer buffer = new StringBuffer();
                                 Observable.fromIterable(bus.getBUSSTOPLIST())
+                                        .take(1)
                                         .subscribe(
                                                 list -> {
                                                     buffer.append(list.getLINENAME() + "번 버스가\n");
