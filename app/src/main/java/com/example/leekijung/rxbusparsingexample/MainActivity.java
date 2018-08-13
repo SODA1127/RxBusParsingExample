@@ -28,40 +28,38 @@ public class MainActivity extends RxAppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initDataBinding();
+        initViewBinding();
     }
 
-    public void initDataBinding() {
+    public void initViewBinding() {
         activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
         busViewModel = ViewModelProviders.of(this).get(BusViewModel.class);
         RxView.clicks(activityMainBinding.busSearchBtn)
-                .subscribe(bus -> getBus());
+                .subscribe(event -> applyBusData());
     }
 
     @SuppressLint("CheckResult")
-    public void getBus() {
-        if(disposable != null) {
-            if(!disposable.isDisposed()) disposable.dispose();
+    public void applyBusData() {
+        if (disposable != null) {
+            if (!disposable.isDisposed()) disposable.dispose();
         }
         String busStopId = activityMainBinding.busNoInput.getText().toString();
-        Observable<Bus> busData = busViewModel.getBusInfo(busStopId);
+        Observable<Bus> busObservable = busViewModel.getBusInfo(busStopId);
         disposable = Observable.interval(5, TimeUnit.SECONDS)
-                .flatMap(bus -> busData)
+                .flatMap(busData -> busObservable)
                 .subscribeOn(Schedulers.single())
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(bindToLifecycle())
-                .subscribe(bus -> {
-                            if (bus.getRESULT().getRESULTCODE().equals(SUCCESS)) {
+                .subscribe(busData -> {
+                            if (busData.getRESULT().getRESULTCODE().equals(SUCCESS)) {
                                 makeToast("버스 도착정보 있음");
                                 StringBuffer buffer = new StringBuffer();
-                                Observable.fromIterable(bus.getBUSSTOPLIST())
-                                        .subscribe(
-                                                list -> {
-                                                    buffer.append(list.getLINENAME() + "번 버스가\n");
-                                                    buffer.append("도착까지" + list.getREMAINMIN() + "분 | " + list.getREMAINSTOP() + "개 정류장 남았습니다.\n");
-                                                    buffer.append("현재 버스 위치는 " + list.getCURRSTOPID() + "입니다.");
-                                                }
-                                        );
+                                Observable.fromIterable(busData.getBUSSTOPLIST())
+                                        .subscribe(bus -> {
+                                            buffer.append(bus.getLINENAME() + "번 버스가\n");
+                                            buffer.append("도착까지" + bus.getREMAINMIN() + "분 | " + bus.getREMAINSTOP() + "개 정류장 남았습니다.\n");
+                                            buffer.append("현재 버스 위치는 " + bus.getCURRSTOPID() + "입니다.");
+                                        });
                                 activityMainBinding.resultTv.setText(buffer);
                             } else {
                                 activityMainBinding.resultTv.setText("버스 도착정보가 없음");
