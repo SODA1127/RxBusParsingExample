@@ -16,30 +16,38 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends RxAppCompatActivity {
-    public ActivityMainBinding binding;
+    public ActivityMainBinding activityMainBinding;
     private BusViewModel busViewModel;
     private final String SUCCESS = "SUCCESS";
+    private Disposable disposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-        busViewModel = ViewModelProviders.of(this).get(BusViewModel.class);
+        initDataBinding();
+    }
 
-        RxView.clicks(binding.busSearchBtn)
+    public void initDataBinding() {
+        activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
+        busViewModel = ViewModelProviders.of(this).get(BusViewModel.class);
+        RxView.clicks(activityMainBinding.busSearchBtn)
                 .subscribe(bus -> getBus());
     }
 
     @SuppressLint("CheckResult")
     public void getBus() {
-        String busStopId = binding.busNoInput.getText().toString();
+        if(disposable != null) {
+            if(!disposable.isDisposed()) disposable.dispose();
+        }
+        String busStopId = activityMainBinding.busNoInput.getText().toString();
         Observable<Bus> busData = busViewModel.getBusInfo(busStopId);
-        Observable.interval(5, TimeUnit.SECONDS)
+        disposable = Observable.interval(5, TimeUnit.SECONDS)
                 .flatMap(bus -> busData)
-                .subscribeOn(Schedulers.newThread())
+                .subscribeOn(Schedulers.single())
                 .observeOn(AndroidSchedulers.mainThread())
                 .compose(bindToLifecycle())
                 .subscribe(bus -> {
@@ -47,21 +55,21 @@ public class MainActivity extends RxAppCompatActivity {
                                 makeToast("버스 도착정보 있음");
                                 StringBuffer buffer = new StringBuffer();
                                 Observable.fromIterable(bus.getBUSSTOPLIST())
-                                        .take(1)
                                         .subscribe(
                                                 list -> {
                                                     buffer.append(list.getLINENAME() + "번 버스가\n");
                                                     buffer.append("도착까지" + list.getREMAINMIN() + "분 | " + list.getREMAINSTOP() + "개 정류장 남았습니다.\n");
                                                     buffer.append("현재 버스 위치는 " + list.getCURRSTOPID() + "입니다.");
-                                                    binding.resultTv.setText(buffer);
                                                 }
                                         );
+                                activityMainBinding.resultTv.setText(buffer);
                             } else {
-                                binding.resultTv.setText("버스 도착정보가 없음");
+                                activityMainBinding.resultTv.setText("버스 도착정보가 없음");
                                 makeToast("버스 도착정보가 없음");
                             }
                         }, Throwable::printStackTrace
-                        , () -> makeToast("성공적으로 버스정보 바인딩됨"));
+                        , () -> makeToast("성공적으로 버스정보 바인딩됨")
+                );
     }
 
     public void makeToast(String msg) {
